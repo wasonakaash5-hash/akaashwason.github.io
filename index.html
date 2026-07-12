@@ -1143,16 +1143,21 @@
           '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>' +
           "</div>";
 
-        // Preserve original iframe sizing by matching its parent container
-        wrapper.style.aspectRatio =
-          iframe.getAttribute("width") && iframe.getAttribute("height")
-            ? iframe.getAttribute("width") + " / " + iframe.getAttribute("height")
-            : "";
+        // Make sure the parent container is positioned so we can fill it exactly
+const parent = iframe.parentNode;
+if (getComputedStyle(parent).position === "static") {
+  parent.style.position = "relative";
+}
+wrapper.style.position = "absolute";
+wrapper.style.top = "0";
+wrapper.style.left = "0";
+wrapper.style.right = "0";
+wrapper.style.bottom = "0";
 
-        // Swap the wrapper in for the iframe
-        iframe.parentNode.insertBefore(wrapper, iframe);
-        const originalSrc = iframe.src;
-        iframe.remove();
+// Swap the wrapper in for the iframe
+parent.insertBefore(wrapper, iframe);
+const originalSrc = iframe.src;
+iframe.remove();
 
         wrapper.addEventListener("click", function () {
           const realIframe = document.createElement("iframe");
@@ -1186,5 +1191,6 @@
     });
   })();
 </script>
+  
 </body>
 </html>
