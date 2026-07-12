@@ -1065,6 +1065,126 @@
       observer.observe(el);
     });
   </script>
+<!--
+  LAZY YOUTUBE EMBED FIX
+  Paste this <script> block right before your closing </body> tag.
+  It finds every YouTube iframe on the page, replaces it with a
+  clickable thumbnail (no network request to YouTube until clicked),
+  and only loads the real player when the user clicks play.
+  This fixes "Error 153" caused by loading many live embeds at once,
+  and makes the page load much faster.
+-->
+<style>
+  .yt-lazy {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    overflow: hidden;
+    background: #000;
+  }
+  .yt-lazy img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .yt-lazy .yt-play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .yt-lazy:hover .yt-play-btn {
+    background: rgba(255, 0, 0, 0.85);
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  .yt-lazy .yt-play-btn svg {
+    width: 26px;
+    height: 26px;
+    margin-left: 4px;
+    fill: #fff;
+  }
+</style>
 
+<script>
+  (function () {
+    // Grabs the YouTube video ID out of an /embed/VIDEO_ID URL
+    function getVideoId(src) {
+      const match = src.match(/embed\/([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : null;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const iframes = document.querySelectorAll(
+        'iframe[src*="youtube.com/embed"], iframe[src*="youtube-nocookie.com/embed"]'
+      );
+
+      iframes.forEach(function (iframe) {
+        const videoId = getVideoId(iframe.src);
+        if (!videoId) return;
+
+        // Build the lazy-load thumbnail wrapper
+        const wrapper = document.createElement("div");
+        wrapper.className = "yt-lazy";
+        wrapper.innerHTML =
+          '<img src="https://i.ytimg.com/vi/' +
+          videoId +
+          '/hqdefault.jpg" loading="lazy" alt="Video thumbnail">' +
+          '<div class="yt-play-btn">' +
+          '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>' +
+          "</div>";
+
+        // Preserve original iframe sizing by matching its parent container
+        wrapper.style.aspectRatio =
+          iframe.getAttribute("width") && iframe.getAttribute("height")
+            ? iframe.getAttribute("width") + " / " + iframe.getAttribute("height")
+            : "";
+
+        // Swap the wrapper in for the iframe
+        iframe.parentNode.insertBefore(wrapper, iframe);
+        const originalSrc = iframe.src;
+        iframe.remove();
+
+        wrapper.addEventListener("click", function () {
+          const realIframe = document.createElement("iframe");
+          realIframe.src = originalSrc.includes("?")
+            ? originalSrc + "&autoplay=1"
+            : originalSrc + "?autoplay=1";
+          realIframe.width = "100%";
+          realIframe.height = "100%";
+          realIframe.style.position = "absolute";
+          realIframe.style.top = "0";
+          realIframe.style.left = "0";
+          realIframe.setAttribute("frameborder", "0");
+          realIframe.setAttribute(
+            "allow",
+            "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          );
+          realIframe.setAttribute("allowfullscreen", "");
+          realIframe.setAttribute(
+            "referrerpolicy",
+            "strict-origin-when-cross-origin"
+          );
+
+          wrapper.replaceWith(realIframe);
+
+          // Wrap the new iframe in a positioned container if needed
+          if (!realIframe.parentElement.style.position) {
+            realIframe.parentElement.style.position = "relative";
+          }
+        });
+      });
+    });
+  })();
+</script>
 </body>
 </html>
