@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genius Wason — Video Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0d0c0b;
+    --bg-raised: #17140f;
+    --line: #2c2620;
+    --ink: #f2ede2;
+    --ink-dim: #a89d8a;
+    --amber: #e08a3c;
+    --amber-dim: #7a5228;
+    --serif: 'Fraunces', serif;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--amber);color:#0d0c0b;}
+  a{color:inherit;text-decoration:none;}
+  img{max-width:100%;display:block;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 32px;}
+  @media(max-width:640px){.wrap{padding:0 20px;}}
+
+  /* Timecode ticker, used as a real structural device (a reel counter), not decoration */
+  .tc{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:12px;letter-spacing:0.02em;color:var(--ink-dim);}
+
+  /* NAV */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    background:linear-gradient(to bottom, rgba(13,12,11,0.92), rgba(13,12,11,0));
+    padding:22px 0;
+  }
+  header .wrap{display:flex;align-items:center;justify-content:space-between;}
+  .brand{font-family:var(--serif);font-size:20px;font-weight:600;font-style:italic;}
+  nav{display:flex;gap:34px;}
+  nav a{font-size:14px;color:var(--ink-dim);transition:color .2s;}
+  nav a:hover{color:var(--ink);}
+  .nav-cta{
+    border:1px solid var(--line);
+    padding:8px 18px;
+    border-radius:2px;
+    font-size:13px;
+  }
+  .nav-cta:hover{border-color:var(--amber);color:var(--amber);}
+  .nav-toggle{display:none;background:none;border:0;color:var(--ink);font-size:24px;cursor:pointer;}
+  @media(max-width:800px){
+    nav{position:fixed;top:64px;left:0;right:0;background:var(--bg-raised);flex-direction:column;padding:24px 32px;gap:20px;border-bottom:1px solid var(--line);display:none;}
+    nav.open{display:flex;}
+    .nav-cta{display:none;}
+    .nav-toggle{display:block;}
+  }
+
+  /* HERO */
+  .hero{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    position:relative;
+    padding-top:120px;
+    padding-bottom:60px;
+    border-bottom:1px solid var(--line);
+  }
+  .hero-frame{
+    position:absolute;inset:24px;
+    border:1px solid var(--line);
+    pointer-events:none;
+  }
+  .hero-top-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:60px;}
+  .hero-loc{font-size:13px;color:var(--ink-dim);}
+  .hero-loc span{color:var(--amber);}
+  h1.display{
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:clamp(52px, 9vw, 128px);
+    line-height:0.92;
+    letter-spacing:-0.01em;
+  }
+  .hero-sub{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-top:44px;
+    gap:40px;
+    flex-wrap:wrap;
+  }
+  .hero-tagline{
+    max-width:380px;
+    font-size:16px;
+    color:var(--ink-dim);
+  }
+  .hero-links{display:flex;gap:16px;}
+  .btn{
+    font-size:14px;
+    padding:14px 26px;
+    border-radius:2px;
+    border:1px solid var(--ink);
+    display:inline-block;
+  }
+  .btn-solid{background:var(--amber);border-color:var(--amber);color:#0d0c0b;font-weight:500;}
+  .btn-solid:hover{background:#f0994f;}
+  .btn-ghost:hover{border-color:var(--amber);color:var(--amber);}
+
+  .reel{
+    margin-top:60px;
+    display:flex;
+    gap:48px;
+    font-family:var(--serif);
+    font-style:italic;
+    font-size:15px;
+    color:var(--ink-dim);
+    flex-wrap:wrap;
+  }
+  .reel b{color:var(--ink);font-style:normal;font-family:var(--sans);font-weight:600;}
+
+  /* SECTION LABELS */
+  .section{padding:110px 0;border-bottom:1px solid var(--line);}
+  .section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:64px;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .section-num{font-family:var(--sans);font-size:13px;color:var(--amber);}
+  h2.section-title{
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:clamp(34px,4.4vw,54px);
+  }
+
+  /* WORK */
+  .reel-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+  @media(max-width:760px){.reel-row{grid-template-columns:1fr;}}
+  .cut{
+    background:var(--bg);
+    padding:36px;
+    position:relative;
+    transition:background .2s;
+  }
+  .cut:hover{background:var(--bg-raised);}
+  .cut-top{display:flex;justify-content:space-between;margin-bottom:26px;}
+  .cut-frame{
+    aspect-ratio:16/9;
+    background:#141210;
+    border:1px solid var(--line);
+    margin-bottom:20px;
+    position:relative;
+    overflow:hidden;
+  }
+  .cut-frame iframe{width:100%;height:100%;border:0;}
+  .cut-frame .ph{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);font-style:italic;color:var(--ink-dim);font-size:14px;
+  }
+  .cut h3{font-family:var(--serif);font-weight:500;font-size:22px;margin-bottom:8px;}
+  .cut p{font-size:14px;color:var(--ink-dim);}
+
+  .filter-row{display:flex;gap:10px;margin-bottom:0;flex-wrap:wrap;}
+  .filter-btn{
+    font-size:13px;
+    padding:9px 18px;
+    border:1px solid var(--line);
+    border-radius:2px;
+    color:var(--ink-dim);
+    background:none;
+    cursor:pointer;
+    font-family:var(--sans);
+  }
+  .filter-btn.active, .filter-btn:hover{border-color:var(--amber);color:var(--amber);}
+
+  /* ABOUT */
+  .about-grid{
+    display:grid;
+    grid-template-columns:1fr 1.3fr;
+    gap:70px;
+    align-items:start;
+  }
+  @media(max-width:800px){.about-grid{grid-template-columns:1fr;}}
+  .about-photo{
+    aspect-ratio:4/5;
+    background:linear-gradient(160deg,#231d16,#0d0c0b);
+    border:1px solid var(--line);
+    display:flex;align-items:end;padding:20px;
+  }
+  .about-photo span{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink-dim);}
+  .about-copy p{font-size:17px;color:var(--ink-dim);margin-bottom:22px;max-width:560px;}
+  .about-copy strong{color:var(--ink);font-weight:500;}
+  .stat-row{display:flex;gap:50px;margin-top:40px;flex-wrap:wrap;}
+  .stat b{display:block;font-family:var(--serif);font-size:38px;color:var(--amber);}
+  .stat span{font-size:13px;color:var(--ink-dim);}
+
+  /* SERVICES */
+  .service-list{border-top:1px solid var(--line);}
+  .service-row{
+    display:grid;
+    grid-template-columns:60px 1fr 1.4fr;
+    gap:24px;
+    padding:32px 0;
+    border-bottom:1px solid var(--line);
+    align-items:baseline;
+  }
+  @media(max-width:700px){.service-row{grid-template-columns:1fr;gap:8px;}}
+  .service-row .tc{align-self:start;}
+  .service-row h3{font-family:var(--serif);font-weight:500;font-size:26px;}
+  .service-row p{font-size:14px;color:var(--ink-dim);max-width:440px;}
+
+  /* CONTACT */
+  .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:70px;}
+  @media(max-width:800px){.contact-grid{grid-template-columns:1fr;}}
+  .contact-copy p{font-size:17px;color:var(--ink-dim);max-width:420px;margin-bottom:30px;}
+  .contact-links a{
+    display:flex;justify-content:space-between;
+    padding:16px 0;border-bottom:1px solid var(--line);
+    font-size:15px;
+  }
+  .contact-links a:hover{color:var(--amber);}
+  form{display:flex;flex-direction:column;gap:18px;}
+  label{font-size:12px;color:var(--ink-dim);display:block;margin-bottom:8px;}
+  input, select, textarea{
+    width:100%;
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:14px;
+    font-family:var(--sans);
+    font-size:14px;
+    border-radius:2px;
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber);}
+  textarea{resize:vertical;min-height:110px;}
+  .submit-btn{
+    background:var(--amber);color:#0d0c0b;border:0;padding:16px;font-weight:500;
+    border-radius:2px;cursor:pointer;font-size:14px;font-family:var(--sans);align-self:flex-start;padding-left:28px;padding-right:28px;
+  }
+  .submit-btn:hover{background:#f0994f;}
+
+  footer{padding:36px 0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  footer .tc{font-size:12px;}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#top">Genius Wason</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+    <nav id="navMenu">
+      <a href="#work">Work</a>
+      <a href="#about">About</a>
+      <a href="#services">Services</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="nav-cta" href="#contact">Get in touch</a>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="hero-frame"></div>
+  <div class="wrap">
+    <div class="hero-top-row">
+      <div class="hero-loc">Based in Punjab, India <span>·</span> Available for freelance</div>
+      <div class="tc">REEL // 001</div>
+    </div>
+
+    <h1 class="display">Genius<br>Wason</h1>
+
+    <div class="hero-sub">
+      <p class="hero-tagline">Video editor and motion designer shaping raw footage into stories that hold attention — from a two-second hook to a ten-minute cut.</p>
+      <div class="hero-links">
+        <a class="btn btn-solid" href="#work">See the work</a>
+        <a class="btn btn-ghost" href="#contact">Start a project</a>
+      </div>
+    </div>
+
+    <div class="reel">
+      <div><b>50+</b> projects cut</div>
+      <div><b>Short &amp; Long Form</b> specialty</div>
+      <div><b>Color · Sound · Motion</b> full post pipeline</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="work">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-num">01 — Portfolio</div>
+        <h2 class="section-title">Selected work</h2>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="short">Short Form</button>
+        <button class="filter-btn" data-filter="long">Long Form</button>
+        <button class="filter-btn" data-filter="motion">Motion</button>
+      </div>
+    </div>
+
+    <div class="reel-row" id="workGrid">
+
+      <div class="cut" data-cat="short">
+        <div class="cut-top"><span class="tc">00:00:12:00</span><span class="tc">SHORT FORM</span></div>
+        <div class="cut-frame"><div class="ph">Paste embed link here</div></div>
+        <h3>Vertical hook edit</h3>
+        <p>A fast-paced social cut built to hold attention in the first two seconds and pay it off by the last.</p>
+      </div>
+
+      <div class="cut" data-cat="short">
+        <div class="cut-top"><span class="tc">00:00:18:00</span><span class="tc">SHORT FORM</span></div>
+        <div class="cut-frame"><div class="ph">Paste embed link here</div></div>
+        <h3>Brand ad cutdown</h3>
+        <p>A 15-second cutdown of a longer brand film, re-paced for feed placement.</p>
+      </div>
+
+      <div class="cut" data-cat="long">
+        <div class="cut-top"><span class="tc">00:03:40:00</span><span class="tc">LONG FORM</span></div>
+        <div class="cut-frame"><div class="ph">Paste embed link here</div></div>
+        <h3>Documentary featurette</h3>
+        <p>A narrative edit built around pacing and interview structure rather than cuts alone.</p>
+      </div>
+
+      <div class="cut" data-cat="long">
+        <div class="cut-top"><span class="tc">00:05:12:00</span><span class="tc">LONG FORM</span></div>
+        <div class="cut-frame"><div class="ph">Paste embed link here</div></div>
+        <h3>Brand story film</h3>
+        <p>A longer-form piece balancing voiceover, b-roll, and score to carry a founder's story.</p>
+      </div>
+
+      <div class="cut" data-cat="motion">
+        <div class="cut-top"><span class="tc">00:00:22:00</span><span class="tc">MOTION</span></div>
+        <div class="cut-frame"><div class="ph">Paste embed link here</div></div>
+        <h3>Kinetic titles</h3>
+        <p>Type-driven motion graphics built to carry a message with no footage at all.</p>
+      </div>
+
+      <div class="cut" data-cat="motion">
+        <div class="cut-top"><span class="tc">00:00:30:00</span><span class="tc">MOTION</span></div>
+        <div class="cut-frame"><div class="ph">Paste embed link here</div></div>
+        <h3>Explainer animation</h3>
+        <p>Animated diagrams and icon work that simplify a product idea into something watchable.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" id="about">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-num">02 — About</div>
+        <h2 class="section-title">The editor behind the cut</h2>
+      </div>
+    </div>
+    <div class="about-grid">
+      <div class="about-photo"><span>Genius Wason</span></div>
+      <div class="about-copy">
+        <p>I'm <strong>Genius Wason</strong>, a video editor and motion designer based in Punjab, India. I work across short-form social content and longer narrative pieces, with a full post-production pipeline that runs from the assembly cut through color and sound.</p>
+        <p>My approach starts with pacing — a great edit should be felt, not noticed. Every project gets the same attention to rhythm, tone, and the small details that keep a viewer watching to the end.</p>
+        <p>Whether it's a fifteen-second ad or a ten-minute brand film, the goal is the same: a cut that serves the story, not the other way around.</p>
+        <div class="stat-row">
+          <div class="stat"><b>50+</b><span>Projects delivered</span></div>
+          <div class="stat"><b>4</b><span>Core disciplines</span></div>
+          <div class="stat"><b>100%</b><span>Attention to pacing</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="services">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-num">03 — Services</div>
+        <h2 class="section-title">What I do</h2>
+      </div>
+    </div>
+    <div class="service-list">
+      <div class="service-row">
+        <span class="tc">01</span>
+        <h3>Video editing</h3>
+        <p>Pacing, structure, and rhythm — turning raw footage into a cut that holds attention from the first frame.</p>
+      </div>
+      <div class="service-row">
+        <span class="tc">02</span>
+        <h3>Color grading</h3>
+        <p>Shaping mood through tone, from sun-bleached cinematic looks to punchy, saturated commercial finishes.</p>
+      </div>
+      <div class="service-row">
+        <span class="tc">03</span>
+        <h3>Sound design</h3>
+        <p>Layered ambience, SFX, and music that give every frame its emotional weight.</p>
+      </div>
+      <div class="service-row">
+        <span class="tc">04</span>
+        <h3>Motion graphics</h3>
+        <p>Kinetic type, transitions, and animated elements that add energy and polish to any edit.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="contact" style="border-bottom:none;">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <div class="section-num">04 — Contact</div>
+        <h2 class="section-title">Let's work together</h2>
+      </div>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-copy">
+        <p>Have a project in mind? Whether it's a brand film, a documentary, or social content that needs to stop the scroll — let's talk about it.</p>
+        <div class="contact-links">
+          <a href="mailto:hello@geniuswason.com"><span>Email</span><span>hello@geniuswason.com</span></a>
+          <a href="https://www.instagram.com/" target="_blank" rel="noopener"><span>Instagram</span><span>@geniuswason</span></a>
+        </div>
+      </div>
+      <form onsubmit="event.preventDefault(); alert('This form is a template — connect it to Formspree, Getform, or similar to receive messages.');">
+        <div>
+          <label for="name">Name</label>
+          <input id="name" type="text" required>
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" required>
+        </div>
+        <div>
+          <label for="type">Project type</label>
+          <select id="type">
+            <option>Brand film</option>
+            <option>Documentary</option>
+            <option>Social media</option>
+            <option>Commercial</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="message">Message</label>
+          <textarea id="message" required></textarea>
+        </div>
+        <button class="submit-btn" type="submit">Send message</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <span class="tc">© 2026 Genius Wason. Based in Punjab, India.</span>
+    <span class="tc">Video Editor &amp; Motion Designer</span>
+  </div>
+</footer>
+
+<script>
+  // mobile nav
+  const toggle = document.getElementById('navToggle');
+  const menu = document.getElementById('navMenu');
+  toggle.addEventListener('click', () => menu.classList.toggle('open'));
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => menu.classList.remove('open')));
+
+  // work filter
+  const buttons = document.querySelectorAll('.filter-btn');
+  const cuts = document.querySelectorAll('#workGrid .cut');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.filter;
+      cuts.forEach(c => {
+        c.style.display = (f === 'all' || c.dataset.cat === f) ? '' : 'none';
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
